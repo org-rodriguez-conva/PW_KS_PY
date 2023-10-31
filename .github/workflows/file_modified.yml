@@ -1,0 +1,31 @@
+
+name: Reject Pull Request if File Modified
+on:
+  pull_request:
+    branches: 
+      - development
+
+jobs:
+  check_codeowners_modification:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2  # This fetches your repository's code
+
+      - name: Fetch origin
+        run: git fetch origin ${{ github.base_ref }}:${{ github.base_ref }}
+
+      - name: Git Diff CODEOWNERS
+        run: |
+          specific_item="CODEOWNERS"
+          
+          git_diff_output=$(git diff --name-status ${{ github.base_ref }})
+
+          # Check if the specific item was renamed or deleted
+          if echo "$git_diff_output" | grep -qE "^M\s*$specific_item"; then
+            echo "The specific item '$specific_item' was modified, and you don't have authorization to modified it."
+            exit 1
+          else
+            echo "The specific item '$specific_item' was not renamed or deleted."
+          fi
+    
